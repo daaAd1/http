@@ -22,7 +22,7 @@ class ExecHandler(SentryMixin, RequestHandler):
         """
         resolve = self.application.router.find_handler(self.request)
 
-        app_log.info('Resolving to %s' % repr(resolve))
+        app_log.info(f'Resolving to {repr(resolve)}')
 
         if not resolve:
             # exit: path not being followed
@@ -76,20 +76,17 @@ class ExecHandler(SentryMixin, RequestHandler):
             resolve, context = self.resolve_by_uri(path)
 
         # geneate the parameters for Engine
-        params = {
+        data = {
             'story_name': resolve.filename,
             'start': resolve.linenum,
             'json_context': context
         }
-        params = dumps(params)
 
-        http_client = AsyncHTTPClient(
+        yield AsyncHTTPClient().fetch(
+            f'http://{self.application.settings["engine_addr"]}',
+            body=dumps(data),
+            streaming_callback=self._callback,
             request_timeout=60
-        )
-        yield http_client.fetch(
-            'http://%s' % self.application.settings['engine_addr'],
-            body=params,
-            streaming_callback=self._callback
         )
 
         self.finish()
