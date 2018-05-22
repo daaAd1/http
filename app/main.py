@@ -3,6 +3,7 @@
 import os
 from tornado import ioloop
 from tornado.options import define, options
+from raven.contrib.tornado import AsyncSentryClient
 
 from .App import App
 from . import handlers
@@ -39,8 +40,7 @@ def make_app():
         routes_file=options.routes_file
     )
 
-    if options.sentry_dsn:
-        application.sentry_client = AsyncSentryClient(options.sentry_dsn)
+    app.sentry_client = AsyncSentryClient(options.sentry_dsn)
 
     return app
 
