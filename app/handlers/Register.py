@@ -6,25 +6,14 @@ from tornado.web import RequestHandler, HTTPError
 
 
 class RegisterHandler(SentryMixin, RequestHandler):
-    def prepare(self):
+    def post(self, action):
         """
-        Accept internal metwork only
+        (un)Register a route
         """
-        # [TODO] only accept from internal network
-        if False:
-            raise HTTPError(405)
-
-    def post(self):
-        """
-        Registera a route
-        POST -d {method:get, endpoint:/ filename:path.story, linenum:1}
-        """
-        self.application.register_route(**loads(self.request.body))
-        self.set_status(204)
-
-    def delete(self):
-        """
-        Unregister a route
-        """
-        self.application.unregister_route(**loads(self.request.body))
-        self.set_status(204)
+        data = loads(self.request.body)
+        if action == 'register':
+            self.application.router.register(**data)
+            self.set_status(201)
+        else:
+            self.application.router.unregister(**data)
+            self.set_status(204)

@@ -6,7 +6,7 @@ from tornado.httpclient import AsyncHTTPClient
 from tornado.log import app_log
 from tornado.web import RequestHandler, HTTPError
 
-from ..utils.Router import Resolve
+from ..Router import Resolve
 
 
 class ExecHandler(SentryMixin, RequestHandler):
