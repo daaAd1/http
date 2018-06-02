@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-from json import dumps
+import ujson
+
+import tornado
+
 from raven.contrib.tornado import SentryMixin
 from tornado.gen import coroutine, Future
 from tornado.httpclient import AsyncHTTPClient
@@ -10,8 +13,11 @@ from ..Router import Resolve
 
 
 class ExecHandler(SentryMixin, RequestHandler):
+    buffer = bytearray()
+
     def get_request_body(self):
-        if 'multipart/form-data' in self.request.headers.get('Content-Type'):
+        headers = self.request.headers
+        if 'multipart/form-data' in headers.get('Content-Type', ''):
             return self.request.files
         else:
             return self.request.body.decode('utf-8')
@@ -40,7 +46,7 @@ class ExecHandler(SentryMixin, RequestHandler):
                 'arguments': {k: self.get_argument(k) for k in self.request.arguments},
                 'headers': dict(self.request.headers)
             },
-            'response': { }
+            'response': {}
         }
 
         return resolve, context
@@ -50,15 +56,15 @@ class ExecHandler(SentryMixin, RequestHandler):
         A http request to `/~/folder/story:3` will directly execute that story.
         """
         if ':' in path:
-            path, linenum = tuple(path.split(':', 1))
+            path, block = tuple(path.split(':', 1))
         else:
-            linenum = 1
+            block = 1
 
         # [TODO] HTTPError(404) if filename does not exist
 
         resolve = Resolve(
             filename=path,
-            linenum=linenum,
+            block=block,
             paths=None
         )
 
@@ -78,16 +84,23 @@ class ExecHandler(SentryMixin, RequestHandler):
         # geneate the parameters for Engine
         data = {
             'story_name': resolve.filename,
-            'start': resolve.linenum,
+            'block': resolve.block,
             'json_context': context
         }
+        params = ujson.dumps(data)
 
-        yield AsyncHTTPClient().fetch(
-            f'http://{self.application.settings["engine_addr"]}',
-            body=dumps(data),
-            streaming_callback=self._callback,
-            request_timeout=60
-        )
+        url = 'http://%s/story/run' % self.application.settings['engine_addr']
+
+        request = tornado.httpclient.HTTPRequest(
+            method='POST',
+            url=url,
+            connect_timeout=10,
+            request_timeout=60,
+            body=params,
+            streaming_callback=self._callback)
+
+        http_client = AsyncHTTPClient()
+        yield http_client.fetch(request)
 
         self.finish()
 
@@ -99,17 +112,33 @@ class ExecHandler(SentryMixin, RequestHandler):
             write Hello, world
             ~finish~ will not be passed since it will close the connection
         """
-        command, data = chunk.split(' ', 1)
 
-        if command == 'set_status':
-            self.set_status(data)
+        # Read `chunk` byte by byte and add it to the buffer.
+        # When a byte is \n, then parse everything in the buffer as string,
+        # and interpret the resulting JSON string.
 
-        elif command == 'set_header':
-            args = loads(args)
-            self.set_header(args['name'], args['value'])
+        instructions = []
+        for b in chunk:
+            if b == 0x0A:  # 0x0A is an ASCII/UTF-8 new line.
+                instructions.append(self.buffer.decode('utf-8'))
+                self.buffer.clear()
+            else:
+                self.buffer.append(b)
 
-        elif command == 'write':
-            self.write(data)
+        # If we have any new instructions, execute them.
+        for ins in instructions:
+            ins = ujson.loads(ins)
+            command = ins['command']
+            if command == 'set_status':
+                self.set_status(ins['code'])
+            elif command == 'set_header':
+                self.set_header(ins['key'], ins['value'])
+            elif command == 'write':
+                self.write(ins['content'])
+            elif command == 'finish':
+                pass  # Do nothing.
+            else:
+                raise NotImplementedError(f'{command} is not implemented!')
 
     @coroutine
     def head(self, is_file, path):
