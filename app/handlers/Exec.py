@@ -15,6 +15,9 @@ from ..Router import Resolve
 class ExecHandler(SentryMixin, RequestHandler):
     buffer = bytearray()
 
+    def prepare(self):
+        self.set_header('Server', 'Asyncy')
+
     def get_request_body(self):
         headers = self.request.headers
         if 'multipart/form-data' in headers.get('Content-Type', ''):
