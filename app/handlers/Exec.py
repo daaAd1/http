@@ -132,14 +132,29 @@ class ExecHandler(SentryMixin, RequestHandler):
         for ins in instructions:
             ins = ujson.loads(ins)
             command = ins['command']
-            if command == 'set_status':
+            if command == 'write':
+                self.write(ins['content'])
+                if ins.get('flush'):
+                    self.flush()
+            elif command == 'set_status':
                 self.set_status(ins['code'])
+            elif command == 'set_cookie':
+                # name, value, domain, expires, path, expires_days, secure
+                if ins.pop('secure', False):
+                    self.set_cookie(**ins)
+                else:
+                    self.set_secure_cookie(**ins)
+            elif command == 'clear_cookie':
+                # name, domain, path
+                self.clear_cookie(**ins)
+            elif command == 'clear_all_cookie':
+                # domain, path
+                self.clear_cookie(**ins)
             elif command == 'set_header':
                 self.set_header(ins['key'], ins['value'])
-            elif command == 'write':
-                self.write(ins['content'])
             elif command == 'finish':
-                pass  # Do nothing.
+                # can we close quicker here?
+                break
             else:
                 raise NotImplementedError(f'{command} is not implemented!')
 
