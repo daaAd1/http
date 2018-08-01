@@ -152,6 +152,8 @@ class ExecHandler(SentryMixin, RequestHandler):
                 self.clear_cookie(**ins)
             elif command == 'set_header':
                 self.set_header(ins['key'], ins['value'])
+            elif command == 'flush':
+                self.flush()
             elif command == 'finish':
                 # can we close quicker here?
                 break
