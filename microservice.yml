@@ -53,7 +53,6 @@ commands:
         output:
           # TODO: command_stream definition here.
           commands:
-            body:
             write:
               arguments:
                 content:
