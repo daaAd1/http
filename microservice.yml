@@ -54,6 +54,7 @@ commands:
           # TODO: command_stream definition here.
           commands:
             write:
+              command_stream: true
               arguments:
                 content:
                   type: string
@@ -62,12 +63,15 @@ commands:
                   type: boolean
                   required: false
             flush:
+              command_stream: true
             get_header:
+              command_stream: true
               arguments:
                 key:
                   type: string
                   required: true
             set_header:
+              command_stream: true
               arguments:
                 key:
                   type: string
@@ -76,7 +80,9 @@ commands:
                   type: string
                   required: true
             set_status:
+              command_stream: true
               code:
                 type: int
                 required: true
             finish:
+              command_stream: true
