@@ -68,7 +68,13 @@ class ExecHandler(SentryMixin, RequestHandler):
             streaming_callback=self._callback)
 
         http_client = AsyncHTTPClient()
-        yield http_client.fetch(request)
+        try:
+            yield http_client.fetch(request)
+        except:
+            import traceback
+            traceback.print_exc()
+            self.set_status(500, reason='foo')
+            self.write('HTTP 500: Story execution failed\n')
 
         self.finish()
 
