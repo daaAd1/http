@@ -43,12 +43,11 @@ commands:
             type: string
             required: true
         http:
+          port: 8889
           subscribe:
-            port: 8889
             path: /register
             method: post
           unsubscribe:
-            port: 8889
             path: /unregister
             method: post
         output:
