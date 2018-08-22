@@ -17,7 +17,7 @@ define('external_port',
        help='Port for external client connections.')
 define('internal_port',
        default=int(os.getenv('PORT', '8889')),
-       help='Port for interanl client connections.')
+       help='Port for internal client connections.')
 define('sentry_dsn',
        default=os.getenv('SENTRY_DSN'),
        help='Sentry DSN')
