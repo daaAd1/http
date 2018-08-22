@@ -104,25 +104,25 @@ class ExecHandler(SentryMixin, RequestHandler):
             ins = ujson.loads(ins)
             command = ins['command']
             if command == 'write':
-                self.write(ins['content'])
-                if ins.get('flush'):
+                self.write(ins['data']['content'])
+                if ins['data'].get('flush'):
                     self.flush()
             elif command == 'set_status':
-                self.set_status(ins['code'])
+                self.set_status(ins['data']['code'])
             elif command == 'set_cookie':
                 # name, value, domain, expires, path, expires_days, secure
-                if ins.pop('secure', False):
-                    self.set_cookie(**ins)
+                if ins['data'].pop('secure', False):
+                    self.set_cookie(**ins['data'])
                 else:
-                    self.set_secure_cookie(**ins)
+                    self.set_secure_cookie(**ins['data'])
             elif command == 'clear_cookie':
                 # name, domain, path
-                self.clear_cookie(**ins)
+                self.clear_cookie(**ins['data'])
             elif command == 'clear_all_cookie':
                 # domain, path
-                self.clear_cookie(**ins)
+                self.clear_cookie(**ins['data'])
             elif command == 'set_header':
-                self.set_header(ins['key'], ins['value'])
+                self.set_header(ins['data']['key'], ins['data']['value'])
             elif command == 'flush':
                 self.flush()
             elif command == 'finish':
