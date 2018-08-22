@@ -73,7 +73,7 @@ class ExecHandler(SentryMixin, RequestHandler):
         except:
             import traceback
             traceback.print_exc()
-            self.set_status(500, reason='foo')
+            self.set_status(500, reason='Story execution failed')
             self.write('HTTP 500: Story execution failed\n')
 
         self.finish()
