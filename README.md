@@ -1,12 +1,12 @@
-# Asyncy Server
+# Asyncy HTTP Gateway
 
-API gateway server for executing Stories via HTTP/TCP/WebSockets.
+API gateway server for executing Stories via HTTP.
 
 ```coffee
-http-endpoint method:get path:'/' as request, response
-    response write data:'Hello World'
-    response status code:200
-    response finish
+when http server listen method:'get' path:'/' as req
+    req write data:'Hello World'
+    req status code:200
+    req finish
 ```
 
 ```sh
@@ -17,7 +17,7 @@ curl https://foobar.asyncyapp.com
 
 ## Development
 
-Setup virtual environment and install dependancies
+Setup virtual environment and install dependencies
 ```
 virtualenv -p python3.6 venv
 source venv/bin/activate
@@ -27,15 +27,15 @@ pip install -r requirements.txt
 Run locally by calling
 
 ```
-python -m app.main --logging=debug --debug --engine=engine:8888
+python -m app.main --logging=debug --debug
 ```
-> Assuming the Asyncy Engine is at `engine:50051`
-
 
 ### Register an endpoint
 
 ```shell
-curl -X POST -d '{"method":"post", "endpoint":"/(?P<hello>\\w+)", "filename":"hello.story", "linenum":1}' http://localhost:8888/register
+curl --data '{"endpoint": "http://localhost:9000/story/foo", "data":{"path":"/ping", "method": "post"}}' \ 
+     -H "Content-Type: application/json" \ 
+     localhost:8889/register
 ```
 
 Now access that endpoint
@@ -48,5 +48,7 @@ curl -X POST -d 'foobar' http://localhost:8888/world
 ### Unregister an endpoint
 
 ```shell
-curl -X POST -d '{"method":"post", "endpoint":"/(?P<hello>\\w+)", "filename":"hello.story", "linenum":1}' http://localhost:8888/unregister
+curl --data '{"endpoint": "http://localhost:9000/story/foo", "data":{"path":"/ping", "method": "post"}}' \ 
+     -H "Content-Type: application/json" \ 
+     localhost:8889/unregister
 ```
