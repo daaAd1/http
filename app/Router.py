@@ -6,9 +6,9 @@ from collections import namedtuple
 from tornado.routing import Router, Matcher, RuleRouter, Rule, PathMatches
 
 
-Resolve = namedtuple('Resolve', ['filename', 'block', 'paths'])
+Resolve = namedtuple('Resolve', ['endpoint', 'paths'])
 
-Route = namedtuple('Route', ['endpoint', 'filename', 'block'])
+Route = namedtuple('Route', ['path', 'endpoint'])
 
 
 def dict_decode_values(_dict):
@@ -22,14 +22,12 @@ def dict_decode_values(_dict):
 
 
 class CustomRouter(Router):
-    def __init__(self, filename, block):
-        self.filename = filename
-        self.block = block
+    def __init__(self, endpoint):
+        self.endpoint = endpoint
 
     def find_handler(self, request, **kwargs):
         return Resolve(
-            filename=self.filename,
-            block=self.block,
+            endpoint=self.endpoint,
             paths=dict_decode_values(kwargs.get('path_kwargs', {}))
         )
 
@@ -60,14 +58,14 @@ class Router(RuleRouter):
                 self._cache = pickle.load(file)
             self._rebuild()
 
-    def register(self, method, endpoint, filename, block):
+    def register(self, method, path, endpoint):
         self._cache.setdefault(method, set())\
-                   .add(Route(endpoint, filename, block))
+                   .add(Route(path, endpoint))
         self._rebuild()
 
-    def unregister(self, method, endpoint, filename, block):
+    def unregister(self, method, path, endpoint):
         self._cache.get(method, set())\
-                   .remove(Route(endpoint, filename, block))
+                   .remove(Route(path, endpoint))
         self._rebuild()
 
     def _rebuild(self):
@@ -77,8 +75,8 @@ class Router(RuleRouter):
         for method, routes in self._cache.items():
             rules = [
                 Rule(
-                    PathMatches(route.endpoint),
-                    CustomRouter(route.filename, route.block)
+                    PathMatches(route.path),
+                    CustomRouter(route.endpoint)
                 ) for route in routes
             ]
             # create a new rule by method mapping to many rule by path

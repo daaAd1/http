@@ -21,9 +21,6 @@ define('internal_port',
 define('sentry_dsn',
        default=os.getenv('SENTRY_DSN'),
        help='Sentry DSN')
-define('engine_addr',
-       default=os.getenv('ENGINE_ADDR', 'engine:8888'),
-       help='engine hostname:port')
 define('routes_file',
        default=os.getenv('ROUTES_FILE',
                          os.path.join(os.path.dirname(__file__),
@@ -34,10 +31,9 @@ define('routes_file',
 def make_external_app(router):
     app = Application(
         handlers=[
-            (r'/(?P<is_file>~/)?(?P<path>.*)', handlers.ExecHandler)
+            (r'/(?P<path>.*)', handlers.ExecHandler)
         ],
-        debug=options.debug,
-        engine_addr=options.engine_addr
+        debug=options.debug
     )
     app.router = router
     app.sentry_client = AsyncSentryClient(options.sentry_dsn)
@@ -66,5 +62,7 @@ if __name__ == '__main__':
 
     internal_app = make_internal_app(router)
     internal_app.listen(options.internal_port)
-
-    ioloop.IOLoop.current().start()
+    try:
+        ioloop.IOLoop.current().start()
+    except KeyboardInterrupt:
+        pass

@@ -1,26 +1,82 @@
+version: 1
 commands:
-  register:
-    help: Register a new http endpoint on the server that points to a story:line
-    arguments: &arguments
-      - name: method
+  help: |
+    Make http calls and listen for http connections through the Asyncy Gateway
+    resulting in serverless http endpoints.
+  fetch:
+    help: Make an http request to a url
+    arguments:
+      method: &method
         type: string
+        default: get
         enum:
-          - get
-          - post
-          - delete
-          - patch
-        help: The HTTP method to register to.
-      - name: endpoint
+        - get
+        - post
+        - delete
+        - put
+        - options
+      url:
         type: string
-        help: The url endpoint that should map to this story.
-      - name: filename
-        type: string
-        help: The story filename that should be executed.
-      - name: linenum
-        type: int
-        help: The line number to start the Story from.
-
-  unregister:
-    help: Unregister a new http endpoint
-    arguments: *arguments
-
+        required: true
+      query:
+        help: |
+          Set an optional map of query parameters.
+          Query parameters are automatically appended to the url specified (/url?foo=bar&john=doe)
+        type: map
+      headers:
+        type: map
+      body:
+        type: any
+    output:
+      type: any
+  server:
+    events:
+      listen:
+        help: |
+          Listen and respond to http connections by
+          registering with the Asyncy Gateway resulting in a serverless function.
+        arguments:
+          method:
+            <<: *method
+            required: true
+          path:
+            type: string
+            required: true
+        http:
+          subscribe:
+            path: /register
+            method: post
+          unsubscribe:
+            path: /unregister
+            method: post
+        output:
+          # TODO: command_stream definition here.
+          commands:
+            body:
+            write:
+              arguments:
+                content:
+                  type: string
+                  required: true
+                flush:
+                  type: boolean
+                  required: false
+            flush:
+            get_header:
+              arguments:
+                key:
+                  type: string
+                  required: true
+            set_header:
+              arguments:
+                key:
+                  type: string
+                  required: true
+                value:
+                  type: string
+                  required: true
+            set_status:
+              code:
+                type: int
+                required: true
+            finish:
