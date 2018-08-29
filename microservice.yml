@@ -45,7 +45,6 @@ commands:
         arguments:
           method:
             <<: *method
-            required: true
           path:
             type: string
             in: requestBody
