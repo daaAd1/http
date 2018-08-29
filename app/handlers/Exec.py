@@ -40,7 +40,7 @@ class ExecHandler(SentryMixin, RequestHandler):
             'source': 'gateway',
             'eventID': str(uuid.uuid4()),
             'eventTime': datetime.utcnow().replace(microsecond=0).isoformat(),
-            'contentType': 'application/json',
+            'contentType': 'application/vnd.omg.object+json',
             'data': {
                 'headers': dict(self.request.headers)
             }
