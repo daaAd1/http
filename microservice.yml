@@ -5,8 +5,8 @@ commands:
     resulting in serverless http endpoints.
   fetch:
     help: |
-    Make a HTTP request to the outside world.
-    This command is native to the platform for performance reasons.
+      Make a HTTP request to the outside world.
+      This command is native to the platform for performance reasons.
     arguments:
       method: &method
         type: string
@@ -76,16 +76,19 @@ commands:
                   in: responseBody
                   required: false
             flush:
-              http: <<: *response_http
+              http:
+                <<: *response_http
             get_header:
-              http: <<: *response_http
+              http:
+                <<: *response_http
               arguments:
                 key:
                   type: string
                   in: responseBody
                   required: true
             set_header:
-              http: <<: *response_http
+              http:
+                <<: *response_http
               arguments:
                 key:
                   type: string
@@ -96,11 +99,13 @@ commands:
                   in: responseBody
                   required: true
             set_status:
-              http: <<: *response_http
+              http:
+                <<: *response_http
               arguments:
                 code:
                   type: int
                   in: responseBody
                   required: true
             finish:
-              http: <<: *response_http
+              http:
+                <<: *response_http
