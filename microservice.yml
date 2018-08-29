@@ -61,6 +61,15 @@ commands:
             contentType: application/json
             method: post
         output:
+          type: object
+          contentType: application/json
+          properties:
+            body:
+              help: The JSON body of the HTTP request
+              type: map
+            headers:
+              help: The HTTP headers of the HTTP request
+              type: map
           commands:
             write:
               http: &response_http
