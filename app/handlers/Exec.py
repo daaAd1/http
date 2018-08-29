@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
+import uuid
+
 import ujson
 
 import tornado
 
 from raven.contrib.tornado import SentryMixin
-from tornado.gen import coroutine, Future
+from tornado.gen import coroutine
 from tornado.httpclient import AsyncHTTPClient
 from tornado.log import app_log
 from tornado.web import RequestHandler, HTTPError
-
-from ..Router import Resolve
 
 
 class ExecHandler(SentryMixin, RequestHandler):
@@ -17,13 +18,6 @@ class ExecHandler(SentryMixin, RequestHandler):
 
     def prepare(self):
         self.set_header('Server', 'Asyncy')
-
-    def get_request_body(self):
-        headers = self.request.headers
-        if 'multipart/form-data' in headers.get('Content-Type', ''):
-            return self.request.files
-        else:
-            return self.request.body.decode('utf-8')
 
     def resolve_by_uri(self, path):
         """
@@ -40,70 +34,47 @@ class ExecHandler(SentryMixin, RequestHandler):
             else:
                 raise HTTPError(405)
 
-        context = {
-            'request': {
-                'method': self.request.method,
-                'uri': self.request.uri,
-                'paths': resolve.paths,
-                'body': self.get_request_body(),
-                'arguments': {k: self.get_argument(k) for k in self.request.arguments},
+        event = {
+            'eventType': 'http_request',
+            'cloudEventsVersion': '0.1',
+            'source': 'gateway',
+            'eventID': str(uuid.uuid4()),
+            'eventTime': datetime.utcnow().replace(microsecond=0).isoformat(),
+            'contentType': 'application/vnd.omg.object+json',
+            'data': {
                 'headers': dict(self.request.headers)
-            },
-            'response': {}
+            }
         }
 
-        return resolve, context
+        if 'application/json' in self.request.headers.get('content-type', ''):
+            event['data']['body'] = ujson.loads(
+                self.request.body.decode('utf-8'))
 
-    def resolve_by_filename(self, path):
-        """
-        A http request to `/~/folder/story:3` will directly execute that story.
-        """
-        if ':' in path:
-            path, block = tuple(path.split(':', 1))
-        else:
-            block = 1
-
-        # [TODO] HTTPError(404) if filename does not exist
-
-        resolve = Resolve(
-            filename=path,
-            block=block,
-            paths=None
-        )
-
-        context = self.get_request_body()
-
-        return resolve, context
+        return resolve, event
 
     @coroutine
-    def _handle(self, is_file, path):
-        if is_file:
-            # resolve directly to story by pathname
-            resolve, context = self.resolve_by_filename(path)
-        else:
-            # resolve to http listeners
-            resolve, context = self.resolve_by_uri(path)
+    def _handle(self, path):
+        resolve, event = self.resolve_by_uri(path)
 
-        # geneate the parameters for Engine
-        data = {
-            'story_name': resolve.filename,
-            'block': resolve.block,
-            'json_context': context
-        }
-        params = ujson.dumps(data)
-
-        url = 'http://%s/story/run' % self.application.settings['engine_addr']
+        url = resolve.endpoint
 
         request = tornado.httpclient.HTTPRequest(
             method='POST',
             url=url,
             connect_timeout=10,
             request_timeout=60,
-            body=params,
+            body=ujson.dumps(event),
+            headers={'Content-Type': 'application/json; charset=utf-8'},
             streaming_callback=self._callback)
 
         http_client = AsyncHTTPClient()
-        yield http_client.fetch(request)
+        try:
+            yield http_client.fetch(request)
+        except:
+            import traceback
+            traceback.print_exc()
+            self.set_status(500, reason='Story execution failed')
+            self.write('HTTP 500: Story execution failed\n')
 
         self.finish()
 
@@ -133,25 +104,25 @@ class ExecHandler(SentryMixin, RequestHandler):
             ins = ujson.loads(ins)
             command = ins['command']
             if command == 'write':
-                self.write(ins['content'])
-                if ins.get('flush'):
+                self.write(ins['data']['content'])
+                if ins['data'].get('flush'):
                     self.flush()
             elif command == 'set_status':
-                self.set_status(ins['code'])
+                self.set_status(ins['data']['code'])
             elif command == 'set_cookie':
                 # name, value, domain, expires, path, expires_days, secure
-                if ins.pop('secure', False):
-                    self.set_cookie(**ins)
+                if ins['data'].pop('secure', False):
+                    self.set_cookie(**ins['data'])
                 else:
-                    self.set_secure_cookie(**ins)
+                    self.set_secure_cookie(**ins['data'])
             elif command == 'clear_cookie':
                 # name, domain, path
-                self.clear_cookie(**ins)
+                self.clear_cookie(**ins['data'])
             elif command == 'clear_all_cookie':
                 # domain, path
-                self.clear_cookie(**ins)
+                self.clear_cookie(**ins['data'])
             elif command == 'set_header':
-                self.set_header(ins['key'], ins['value'])
+                self.set_header(ins['data']['key'], ins['data']['value'])
             elif command == 'flush':
                 self.flush()
             elif command == 'finish':
@@ -161,30 +132,30 @@ class ExecHandler(SentryMixin, RequestHandler):
                 raise NotImplementedError(f'{command} is not implemented!')
 
     @coroutine
-    def head(self, is_file, path):
-        yield self._handle(is_file, path)
+    def head(self, path):
+        yield self._handle(path)
 
     @coroutine
-    def get(self, is_file, path):
-        yield self._handle(is_file, path)
+    def get(self, path):
+        yield self._handle(path)
 
     @coroutine
-    def post(self, is_file, path):
-        yield self._handle(is_file, path)
+    def post(self, path):
+        yield self._handle(path)
 
     @coroutine
-    def delete(self, is_file, path):
-        yield self._handle(is_file, path)
+    def delete(self, path):
+        yield self._handle(path)
 
     @coroutine
-    def patch(self, is_file, path):
-        yield self._handle(is_file, path)
+    def patch(self, path):
+        yield self._handle(path)
 
     @coroutine
-    def put(self, is_file, path):
-        yield self._handle(is_file, path)
+    def put(self, path):
+        yield self._handle(path)
 
-    def options(self, is_file, path):
+    def options(self, path):
         """
         Returns the allowed options for this endpoint
         """
