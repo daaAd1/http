@@ -3,9 +3,12 @@
 API gateway server for executing Stories via HTTP.
 
 ```coffee
-when http server listen method:'get' path:'/' as req
-    req write data:'Hello World'
-    req status code:200
+when http server listen method: 'get' path: '/' as req
+    log info msg: req.body
+    log info msg: req.headers
+    log info msg: req.headers['Host']
+    req write data: 'Hello World'
+    req status code: 200
     req finish
 ```
 
