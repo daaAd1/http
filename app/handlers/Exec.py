@@ -104,7 +104,10 @@ class ExecHandler(SentryMixin, RequestHandler):
             ins = ujson.loads(ins)
             command = ins['command']
             if command == 'write':
-                self.write(ins['data']['content'])
+                if ins['data'].get('content') is None:
+                    self.write('null')
+                else:
+                    self.write(ins['data']['content'])
                 if ins['data'].get('flush'):
                     self.flush()
             elif command == 'set_status':
