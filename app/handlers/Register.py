@@ -12,12 +12,14 @@ class RegisterHandler(SentryMixin, RequestHandler):
         """
         req = loads(self.request.body)
         if self.request.path == '/register':
-            self.application.router.register(req['data']['method'],
-                                             req['data']['path'],
-                                             req['endpoint'])
+            self.application.router.register(
+                req['data'].get('method', 'get'),
+                req['data']['path'],
+                req['endpoint'])
             self.set_status(201)
         else:
-            self.application.router.unregister(req['data']['method'],
-                                               req['data']['path'],
-                                               req['endpoint'])
+            self.application.router.unregister(
+                req['data'].get('method', 'get'),
+                req['data']['path'],
+                req['endpoint'])
             self.set_status(204)
