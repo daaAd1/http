@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-
+import logging
+from logging import Logger
 import os
 import pickle
 from collections import namedtuple
@@ -47,6 +48,8 @@ class MethodMatches(Matcher):
 
 class Router(RuleRouter):
 
+    logger = logging.getLogger('router')
+
     def __init__(self, routes_file):
         self.routes_file = routes_file
         self.rules = []
@@ -59,6 +62,7 @@ class Router(RuleRouter):
             self._rebuild()
 
     def register(self, method, path, endpoint):
+        self.logger.info(f'Adding route {method} {path} -> {endpoint}')
         self._cache.setdefault(method, set())\
                    .add(Route(path, endpoint))
         self._rebuild()
