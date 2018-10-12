@@ -43,9 +43,13 @@ class ExecHandler(SentryMixin, RequestHandler):
             'eventTime': datetime.utcnow().replace(microsecond=0).isoformat(),
             'contentType': 'application/vnd.omg.object+json',
             'data': {
-                'headers': dict(self.request.headers)
+                'headers': dict(self.request.headers),
             }
         }
+
+        event['data']['query_params'] = {}
+        for k, v in self.request.arguments.items():
+            event['data']['query_params'][k] = v[0].decode('utf-8')
 
         if 'application/json' in self.request.headers.get('content-type', ''):
             event['data']['body'] = ujson.loads(
