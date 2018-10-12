@@ -83,6 +83,19 @@ commands:
                   type: boolean
                   in: responseBody
                   required: false
+            redirect:
+              help: Redirect the incoming URL. No additional commands may be used after executing this command.
+              http:
+                <<: *response_http
+              arguments:
+                url:
+                  type: string
+                  in: responseBody
+                  required: true
+                query:
+                  help: These query parameters are appended to the URL specified.
+                  type: map
+                  in: responseBody
             flush:
               http:
                 <<: *response_http
