@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 import uuid
+from urllib.parse import urlencode
 
 import ujson
 
@@ -128,6 +129,16 @@ class ExecHandler(SentryMixin, RequestHandler):
                 self.set_header(ins['data']['key'], ins['data']['value'])
             elif command == 'flush':
                 self.flush()
+            elif command == 'redirect':
+                redir_url = ins['data']['url']
+                params = ins['data'].get('query')
+                if isinstance(params, dict):
+                    query_string = urlencode(params)
+                    if '?' in redir_url:
+                        redir_url = f'{redir_url}&{query_string}'
+                    else:
+                        redir_url = f'{redir_url}?{query_string}'
+                self.redirect(redir_url)
             elif command == 'finish':
                 # can we close quicker here?
                 break
