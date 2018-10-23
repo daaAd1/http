@@ -9,7 +9,7 @@ from tornado.routing import Router, Matcher, RuleRouter, Rule, PathMatches
 
 Resolve = namedtuple('Resolve', ['endpoint', 'paths'])
 
-Route = namedtuple('Route', ['path', 'endpoint'])
+Route = namedtuple('Route', ['host', 'path', 'endpoint'])
 
 
 def dict_decode_values(_dict):
@@ -46,11 +46,25 @@ class MethodMatches(Matcher):
             return None
 
 
+class HostAndPathMatches(PathMatches):
+
+    def __init__(self, host, path_pattern):
+        super().__init__(path_pattern)
+        self.host = host
+
+    def match(self, request):
+        if request.host == self.host:
+            return super().match(request)
+
+        return None
+
+
 class Router(RuleRouter):
 
     logger = logging.getLogger('router')
 
     def __init__(self, routes_file):
+        super().__init__()
         self.routes_file = routes_file
         self.rules = []
         self._cache = {}
@@ -61,15 +75,15 @@ class Router(RuleRouter):
                 self._cache = pickle.load(file)
             self._rebuild()
 
-    def register(self, method, path, endpoint):
-        self.logger.info(f'Adding route {method} {path} -> {endpoint}')
+    def register(self, host, method, path, endpoint):
+        self.logger.info(f'Adding route {method} {host} {path} -> {endpoint}')
         self._cache.setdefault(method, set())\
-                   .add(Route(path, endpoint))
+                   .add(Route(host, path, endpoint))
         self._rebuild()
 
-    def unregister(self, method, path, endpoint):
+    def unregister(self, host, method, path, endpoint):
         self._cache.get(method, set())\
-                   .remove(Route(path, endpoint))
+                   .remove(Route(host, path, endpoint))
         self._rebuild()
 
     def _rebuild(self):
@@ -79,7 +93,7 @@ class Router(RuleRouter):
         for method, routes in self._cache.items():
             rules = [
                 Rule(
-                    PathMatches(route.path),
+                    HostAndPathMatches(route.host, route.path),
                     CustomRouter(route.endpoint)
                 ) for route in routes
             ]
