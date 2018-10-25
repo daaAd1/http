@@ -1,5 +1,5 @@
-version: 1
-commands:
+omg: 1
+actions:
   help: |
     Make http calls and listen for http connections through the Asyncy Gateway
     resulting in serverless http endpoints.
