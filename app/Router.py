@@ -6,6 +6,7 @@ import pickle
 from collections import namedtuple
 from tornado.routing import Router, Matcher, RuleRouter, Rule, PathMatches
 
+from app import Config
 
 Resolve = namedtuple('Resolve', ['endpoint', 'paths'])
 
@@ -53,7 +54,8 @@ class HostAndPathMatches(PathMatches):
         self.host = host
 
     def match(self, request):
-        if request.host == self.host:
+        # Truncate the ".asyncyapp.com" from "foo.asyncyapp.com"
+        if request.host[:-(Config.PRIMARY_DOMAIN_LEN + 1)] == self.host:
             return super().match(request)
 
         return None
