@@ -6,7 +6,7 @@ import pickle
 from collections import namedtuple
 from tornado.routing import Router, Matcher, RuleRouter, Rule, PathMatches
 
-from app import Config
+from . import Config
 
 Resolve = namedtuple('Resolve', ['endpoint', 'paths'])
 
