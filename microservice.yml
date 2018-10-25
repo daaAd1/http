@@ -69,7 +69,7 @@ actions:
             headers:
               help: The HTTP headers of the HTTP request
               type: map
-          commands:
+          actions:
             write:
               http: &response_http
                 contentType: application/json
@@ -84,7 +84,7 @@ actions:
                   in: responseBody
                   required: false
             redirect:
-              help: Redirect the incoming URL. No additional commands may be used after executing this command.
+              help: Redirect the incoming URL. No additional actions may be used after executing this command.
               http:
                 <<: *response_http
               arguments:
