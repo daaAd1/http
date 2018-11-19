@@ -81,7 +81,8 @@ class ExecHandler(SentryMixin, RequestHandler):
             self.set_status(500, reason='Story execution failed')
             self.write('HTTP 500: Story execution failed\n')
 
-        self.finish()
+        if not self._finished:
+            self.finish()
 
     def _callback(self, chunk):
         """
