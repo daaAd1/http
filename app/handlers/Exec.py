@@ -13,6 +13,8 @@ from tornado.httpclient import AsyncHTTPClient
 from tornado.log import app_log
 from tornado.web import RequestHandler, HTTPError
 
+from handlers.FourOhFour import FourOhFour
+
 
 class ExecHandler(SentryMixin, RequestHandler):
     buffer = bytearray()
@@ -30,10 +32,7 @@ class ExecHandler(SentryMixin, RequestHandler):
 
         if not resolve:
             # exit: path not being followed
-            if self.request.method == 'GET':
-                raise HTTPError(404)
-            else:
-                raise HTTPError(405)
+            return None, None
 
         event = {
             'eventType': 'http_request',
@@ -60,6 +59,11 @@ class ExecHandler(SentryMixin, RequestHandler):
     @coroutine
     def _handle(self, path):
         resolve, event = self.resolve_by_uri(path)
+
+        if resolve is None and event is None:
+            FourOhFour.handle(self)
+            self.finish()
+            return
 
         url = resolve.endpoint
 
