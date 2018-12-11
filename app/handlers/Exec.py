@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime
 import uuid
+from datetime import datetime
 from urllib.parse import urlencode
 
-import ujson
-
-import tornado
 
 from raven.contrib.tornado import SentryMixin
+
+import tornado
 from tornado.gen import coroutine
 from tornado.httpclient import AsyncHTTPClient
 from tornado.log import app_log
-from tornado.web import RequestHandler, HTTPError
+from tornado.web import RequestHandler
+
+import ujson
+
+from .FourOhFour import FourOhFour
 
 
 class ExecHandler(SentryMixin, RequestHandler):
@@ -30,10 +33,7 @@ class ExecHandler(SentryMixin, RequestHandler):
 
         if not resolve:
             # exit: path not being followed
-            if self.request.method == 'GET':
-                raise HTTPError(404)
-            else:
-                raise HTTPError(405)
+            return None, None
 
         event = {
             'eventType': 'http_request',
@@ -60,6 +60,11 @@ class ExecHandler(SentryMixin, RequestHandler):
     @coroutine
     def _handle(self, path):
         resolve, event = self.resolve_by_uri(path)
+
+        if resolve is None and event is None:
+            FourOhFour.handle(self)
+            self.finish()
+            return
 
         url = resolve.endpoint
 
