@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
+import json
+import typing
 import uuid
+from collections import namedtuple
 from datetime import datetime
+from functools import partial
 from urllib.parse import urlencode
 
 
@@ -12,13 +16,15 @@ from tornado.httpclient import AsyncHTTPClient
 from tornado.log import app_log
 from tornado.web import RequestHandler
 
-import ujson
-
 from .FourOhFour import FourOhFour
+
+File = namedtuple('File', ['name', 'body', 'content_type', 'upload_name'])
+CLOUD_EVENTS_FILE_KEY = '_ce_payload'
 
 
 class ExecHandler(SentryMixin, RequestHandler):
     buffer = bytearray()
+    response_passthrough = True
 
     def prepare(self):
         self.set_header('Server', 'Asyncy')
@@ -52,7 +58,7 @@ class ExecHandler(SentryMixin, RequestHandler):
             event['data']['query_params'][k] = v[0].decode('utf-8')
 
         if 'application/json' in self.request.headers.get('content-type', ''):
-            event['data']['body'] = ujson.loads(
+            event['data']['body'] = json.loads(
                 self.request.body.decode('utf-8'))
 
         return resolve, event
@@ -68,18 +74,8 @@ class ExecHandler(SentryMixin, RequestHandler):
 
         url = resolve.endpoint
 
-        request = tornado.httpclient.HTTPRequest(
-            method='POST',
-            url=url,
-            connect_timeout=10,
-            request_timeout=60,
-            body=ujson.dumps(event),
-            headers={'Content-Type': 'application/json; charset=utf-8'},
-            streaming_callback=self._callback)
-
-        http_client = AsyncHTTPClient()
         try:
-            yield http_client.fetch(request)
+            yield self.execute_request(url, event)
         except:
             import traceback
             traceback.print_exc()
@@ -89,6 +85,110 @@ class ExecHandler(SentryMixin, RequestHandler):
         if not self._finished:
             self.finish()
 
+    @coroutine
+    def execute_request(self, url, event):
+        """
+        If there are any files in the request, then the request made
+        to the engine will be multipart/form-data.
+        If no files exist, then it'll be a plain old application/json request.
+        """
+        kwargs = {
+            'method': 'POST',
+            'url': url,
+            'connect_timeout': 10,
+            'request_timeout': 60,
+            'streaming_callback': self._callback,
+            'header_callback': self._on_headers_receive
+        }
+
+        if len(self.request.files) == 0:
+            kwargs['body'] = json.dumps(event)
+            kwargs['headers'] = {
+                'Content-Type': 'application/json; charset=utf-8'
+            }
+        else:
+            boundary = uuid.uuid4().hex
+            headers = {
+                'Content-Type': f'multipart/form-data; boundary={boundary}'
+            }
+            files = self._get_request_files()
+            self._insert_event_as_file(event, files)
+            producer = partial(self.multipart_producer, files, boundary)
+            kwargs['headers'] = headers
+            kwargs['body_producer'] = producer
+
+        request = tornado.httpclient.HTTPRequest(**kwargs)
+        client = AsyncHTTPClient()
+        yield client.fetch(request)
+
+    def _insert_event_as_file(self, event: dict, files: typing.List[File]):
+        files.append(
+            File(name=CLOUD_EVENTS_FILE_KEY,
+                 body=json.dumps(event).encode('utf-8'),
+                 content_type='application/json',
+                 upload_name=CLOUD_EVENTS_FILE_KEY))
+
+    def _get_request_files(self) -> typing.List[File]:
+        # File handling:
+        # self.request.files looks like this:
+        # {"upload_name": [{filename:<>, body:<>, content_type:<>}, {<file>}]}
+        all_files = []
+        for upload_name in self.request.files:
+            for _f in self.request.files[upload_name]:
+                all_files.append(
+                    File(name=_f['filename'],
+                         body=_f['body'],
+                         content_type=_f['content_type'],
+                         upload_name=upload_name)
+                )
+        return all_files
+
+    @coroutine
+    def multipart_producer(self, files: typing.List[File], boundary, write):
+        """
+        Inspired directly from here:
+        https://github.com/tornadoweb/tornado/blob/master/demos/file_upload/file_uploader.py
+        """
+        boundary_bytes = boundary.encode()
+
+        for file in files:
+            filename_bytes = file.name.encode()
+            upload_name_bytes = file.upload_name.encode()
+            buf = (
+                (b'--%s\r\n' % boundary_bytes) +
+                (
+                    b'Content-Disposition: form-data; '
+                    b'name="%s"; filename="%s"\r\n'
+                    % (upload_name_bytes, filename_bytes)
+                ) +
+                (b'Content-Type: %s\r\n' % file.content_type.encode()) +
+                b'\r\n'
+            )
+            yield write(buf)
+
+            # We only write bytes.
+            assert isinstance(file.body, bytes)
+            yield write(file.body)
+
+            yield write(b'\r\n')
+
+        yield write(b'--%s--\r\n' % (boundary_bytes,))
+
+    def _on_headers_receive(self, header_line: str):
+        """
+        Checks if a Content-Type header is sent, which indicates if the data
+        received is binary. If it's binary, it needs to be streamed to the
+        client without the usual command processing logic.
+        """
+        if header_line.lower().startswith('content-type'):
+            parts = header_line.split(':')
+            value = parts[1].strip()
+            if value.startswith('application/stream+json'):
+                self.response_passthrough = False
+            else:
+                # Since it's not json, push the response to the client as is.
+                self.set_header('Content-Type', value)
+
     def _callback(self, chunk):
         """
         Chunk examples that come from the Engine
@@ -97,6 +197,13 @@ class ExecHandler(SentryMixin, RequestHandler):
             write Hello, world
             ~finish~ will not be passed since it will close the connection
         """
+
+        # If the response from the engine is binary (see _on_headers_receive),
+        # then the response must be sent to the client directly.
+
+        if self.response_passthrough:
+            self.write(chunk)
+            return
 
         # Read `chunk` byte by byte and add it to the buffer.
         # When a byte is \n, then parse everything in the buffer as string,
@@ -112,7 +219,7 @@ class ExecHandler(SentryMixin, RequestHandler):
 
         # If we have any new instructions, execute them.
         for ins in instructions:
-            ins = ujson.loads(ins)
+            ins = json.loads(ins)
             command = ins['command']
             if command == 'write':
                 if ins['data'].get('content') is None:
