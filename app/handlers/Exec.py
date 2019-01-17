@@ -24,6 +24,7 @@ CLOUD_EVENTS_FILE_KEY = '_ce_payload'
 
 class ExecHandler(SentryMixin, RequestHandler):
     buffer = bytearray()
+    response_passthrough = True
 
     def prepare(self):
         self.set_header('Server', 'Asyncy')
@@ -96,7 +97,8 @@ class ExecHandler(SentryMixin, RequestHandler):
             'url': url,
             'connect_timeout': 10,
             'request_timeout': 60,
-            'streaming_callback': self._callback
+            'streaming_callback': self._callback,
+            'header_callback': self._on_headers_receive
         }
 
         if len(self.request.files) == 0:
@@ -172,6 +174,21 @@ class ExecHandler(SentryMixin, RequestHandler):
 
         yield write(b'--%s--\r\n' % (boundary_bytes,))
 
+    def _on_headers_receive(self, header_line: str):
+        """
+        Checks if a Content-Type header is sent, which indicates if the data
+        received is binary. If it's binary, it needs to be streamed to the
+        client without the usual command processing logic.
+        """
+        if header_line.lower().startswith('content-type'):
+            parts = header_line.split(':')
+            value = parts[1].strip()
+            if value.startswith('application/stream+json'):
+                self.response_passthrough = False
+            else:
+                # Since it's not json, push the response to the client as is.
+                self.set_header('Content-Type', value)
+
     def _callback(self, chunk):
         """
         Chunk examples that come from the Engine
@@ -180,6 +197,13 @@ class ExecHandler(SentryMixin, RequestHandler):
             write Hello, world
             ~finish~ will not be passed since it will close the connection
         """
+
+        # If the response from the engine is binary (see _on_headers_receive),
+        # then the response must be sent to the client directly.
+
+        if self.response_passthrough:
+            self.write(chunk)
+            return
 
         # Read `chunk` byte by byte and add it to the buffer.
         # When a byte is \n, then parse everything in the buffer as string,
