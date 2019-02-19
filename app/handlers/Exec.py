@@ -250,6 +250,9 @@ class ExecHandler(SentryMixin, RequestHandler):
                 redir_url = ins['data']['url']
                 params = ins['data'].get('query')
                 if isinstance(params, dict):
+                    # Convert boolean True/False to true/false as strings,
+                    # because of Python's silly-ness.
+                    self.handle_boolean_values(params)
                     query_string = urlencode(params)
                     if '?' in redir_url:
                         redir_url = f'{redir_url}&{query_string}'
@@ -261,6 +264,14 @@ class ExecHandler(SentryMixin, RequestHandler):
                 break
             else:
                 raise NotImplementedError(f'{command} is not implemented!')
+
+    def handle_boolean_values(self, params: dict):
+        for k, v in params.items():
+            if isinstance(v, bool):
+                if v:
+                    params[k] = 'true'
+                else:
+                    params[k] = 'false'
 
     @coroutine
     def head(self, path):
