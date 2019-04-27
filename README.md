@@ -14,7 +14,7 @@ http server as server
 ```
 
 ```sh
-curl https://foobar.asyncyapp.com
+curl https://foobar.storyscriptapp.com
 >>> Hello World
 ```
 
@@ -45,7 +45,7 @@ curl --data '{"endpoint": "http://localhost:9000/story/foo", "data":{"path":"/pi
 Now access that endpoint
 
 ```shell
-curl -X POST -d 'foobar' -H "Host: a.asyncyapp.com" http://localhost:8888/ping
+curl -X POST -d 'foobar' -H "Host: a.storyscriptapp.com" http://localhost:8888/ping
 ```
 
 
