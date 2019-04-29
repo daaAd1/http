@@ -3,7 +3,8 @@
 API gateway server for executing Stories via HTTP.
 
 ```coffee
-when http server listen method: 'get' path: '/' as req
+http server as server
+  when server listen method: 'get' path: '/' as req
     log info msg: req.body
     log info msg: req.headers
     log info msg: req.headers['Host']
@@ -13,7 +14,7 @@ when http server listen method: 'get' path: '/' as req
 ```
 
 ```sh
-curl https://foobar.asyncyapp.com
+curl https://foobar.storyscriptapp.com
 >>> Hello World
 ```
 
@@ -36,22 +37,22 @@ python -m app.main --logging=debug --debug
 ### Register an endpoint
 
 ```shell
-curl --data '{"endpoint": "http://localhost:9000/story/foo", "data":{"path":"/ping", "method": "post"}}' \ 
-     -H "Content-Type: application/json" \ 
+curl --data '{"endpoint": "http://localhost:9000/story/foo", "data":{"path":"/ping", "method": "post", "host": "a"}}' \
+     -H "Content-Type: application/json" \
      localhost:8889/register
 ```
 
 Now access that endpoint
 
 ```shell
-curl -X POST -d 'foobar' http://localhost:8888/world
+curl -X POST -d 'foobar' -H "Host: a.storyscriptapp.com" http://localhost:8888/ping
 ```
 
 
 ### Unregister an endpoint
 
 ```shell
-curl --data '{"endpoint": "http://localhost:9000/story/foo", "data":{"path":"/ping", "method": "post"}}' \ 
-     -H "Content-Type: application/json" \ 
+curl --data '{"endpoint": "http://localhost:9000/story/foo", "data":{"path":"/ping", "method": "post", "host": "a"}}' \
+     -H "Content-Type: application/json" \
      localhost:8889/unregister
 ```

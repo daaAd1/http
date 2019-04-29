@@ -54,7 +54,7 @@ class HostAndPathMatches(PathMatches):
         self.host = host
 
     def match(self, request):
-        # Truncate the ".asyncyapp.com" from "foo.asyncyapp.com"
+        # Truncate the ".storyscriptapp.com" from "foo.asyncyapp.com"
         if request.host[:-(Config.PRIMARY_DOMAIN_LEN + 1)] == self.host:
             return super().match(request)
 
