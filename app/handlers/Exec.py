@@ -49,8 +49,10 @@ class ExecHandler(SentryMixin, RequestHandler):
             'eventTime': datetime.utcnow().replace(microsecond=0).isoformat(),
             'contentType': 'application/vnd.omg.object+json',
             'data': {
+                'uri': self.request.uri,
+                'path': self.request.path,
                 'headers': dict(self.request.headers),
-            }
+            },
         }
 
         event['data']['query_params'] = {}
@@ -59,7 +61,8 @@ class ExecHandler(SentryMixin, RequestHandler):
 
         if 'application/json' in self.request.headers.get('content-type', ''):
             event['data']['body'] = json.loads(
-                self.request.body.decode('utf-8'))
+                self.request.body.decode('utf-8')
+            )
 
         return resolve, event
 
@@ -78,6 +81,7 @@ class ExecHandler(SentryMixin, RequestHandler):
             yield self.execute_request(url, event)
         except:
             import traceback
+
             traceback.print_exc()
             self.set_status(500, reason='Story execution failed')
             self.write('HTTP 500: Story execution failed\n')
@@ -98,7 +102,7 @@ class ExecHandler(SentryMixin, RequestHandler):
             'connect_timeout': 10,
             'request_timeout': 60,
             'streaming_callback': self._callback,
-            'header_callback': self._on_headers_receive
+            'header_callback': self._on_headers_receive,
         }
 
         if len(self.request.files) == 0:
@@ -123,10 +127,13 @@ class ExecHandler(SentryMixin, RequestHandler):
 
     def _insert_event_as_file(self, event: dict, files: typing.List[File]):
         files.append(
-            File(name=CLOUD_EVENTS_FILE_KEY,
-                 body=json.dumps(event).encode('utf-8'),
-                 content_type='application/json',
-                 upload_name=CLOUD_EVENTS_FILE_KEY))
+            File(
+                name=CLOUD_EVENTS_FILE_KEY,
+                body=json.dumps(event).encode('utf-8'),
+                content_type='application/json',
+                upload_name=CLOUD_EVENTS_FILE_KEY,
+            )
+        )
 
     def _get_request_files(self) -> typing.List[File]:
         # File handling:
@@ -136,10 +143,12 @@ class ExecHandler(SentryMixin, RequestHandler):
         for upload_name in self.request.files:
             for _f in self.request.files[upload_name]:
                 all_files.append(
-                    File(name=_f['filename'],
-                         body=_f['body'],
-                         content_type=_f['content_type'],
-                         upload_name=upload_name)
+                    File(
+                        name=_f['filename'],
+                        body=_f['body'],
+                        content_type=_f['content_type'],
+                        upload_name=upload_name,
+                    )
                 )
         return all_files
 
@@ -155,14 +164,14 @@ class ExecHandler(SentryMixin, RequestHandler):
             filename_bytes = file.name.encode()
             upload_name_bytes = file.upload_name.encode()
             buf = (
-                (b'--%s\r\n' % boundary_bytes) +
-                (
+                (b'--%s\r\n' % boundary_bytes)
+                + (
                     b'Content-Disposition: form-data; '
                     b'name="%s"; filename="%s"\r\n'
                     % (upload_name_bytes, filename_bytes)
-                ) +
-                (b'Content-Type: %s\r\n' % file.content_type.encode()) +
-                b'\r\n'
+                )
+                + (b'Content-Type: %s\r\n' % file.content_type.encode())
+                + b'\r\n'
             )
             yield write(buf)
 
