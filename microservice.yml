@@ -65,11 +65,20 @@ actions:
           contentType: application/json
           properties:
             body:
-              help: The JSON body of the HTTP request
+              help: The JSON body of the incoming HTTP request
               type: map
             headers:
-              help: The HTTP headers of the HTTP request
+              help: The HTTP headers of the incoming HTTP request
               type: map
+            query_params:
+              help: The parsed query parameters of the HTTP request
+              type: map
+            uri:
+              help: The URI of the incoming HTTP request
+              type: string
+            path:
+              help: The path portion of th URI of the incoming HTTP request
+              type: string
           actions:
             write:
               http: &response_http
