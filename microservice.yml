@@ -15,6 +15,7 @@ actions:
         enum:
         - get
         - post
+        # - patch (missing?)
         - delete
         - put
         - options
