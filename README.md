@@ -4,18 +4,18 @@ API gateway server for executing Stories via HTTP.
 
 ```coffee
 http server as server
-  when server listen method: 'get' path: '/' as req
-    log info msg: req.body
-    log info msg: req.headers
-    log info msg: req.headers['Host']
-    req write data: 'Hello World'
-    req status code: 200
-    req finish
+  when server listen method: 'get' path: '/' as r
+    log info msg: r.body
+    log info msg: r.headers
+    log info msg: r.headers['Host']
+    r write data: 'Hello World'
+    r status code: 200
+    r finish
 ```
 
 ```sh
-curl https://foobar.storyscriptapp.com
->>> Hello World
+$ curl https://foobar.storyscriptapp.com/
+Hello World
 ```
 
 
