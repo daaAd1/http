@@ -41,6 +41,11 @@ class ExecHandler(SentryMixin, RequestHandler):
             # exit: path not being followed
             return None, None
 
+        # Do not change the eventType and source.
+        # The runtime makes the headers case-insensitive
+        # if the eventType is http_request.
+        # See
+        # https://github.com/storyscript/platform-engine/pull/320/commits/cdb1df7f4fd36783c6b3b1d8ed92f539b672e388
         event = {
             'eventType': 'http_request',
             'cloudEventsVersion': '0.1',
