@@ -28,6 +28,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+You may need to tell pycurl the path to your openssl installation
+```
+pip install --install-option="--with-openssl" --install-option="--openssl-dir=/usr/local/opt/openssl" pycurl
+```
+See https://github.com/nahamsec/JSParser/issues/22
+
+
 Run locally by calling
 
 ```
