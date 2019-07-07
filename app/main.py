@@ -3,6 +3,7 @@
 import os
 from tornado import ioloop
 from tornado.web import Application
+from tornado.httpclient import AsyncHTTPClient
 from tornado.options import define, options
 from raven.contrib.tornado import AsyncSentryClient
 
@@ -57,11 +58,14 @@ if __name__ == '__main__':
 
     router = Router(options.routes_file)
 
+    AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient", max_clients=60)
+
     external_app = make_external_app(router)
     external_app.listen(options.external_port)
 
     internal_app = make_internal_app(router)
     internal_app.listen(options.internal_port)
+
     try:
         ioloop.IOLoop.current().start()
     except KeyboardInterrupt:
