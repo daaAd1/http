@@ -126,6 +126,7 @@ class ExecHandler(SentryMixin, RequestHandler):
             kwargs['headers'] = headers
             kwargs['body_producer'] = producer
 
+        kwargs['headers']['Connection'] = 'keep-alive'
         request = tornado.httpclient.HTTPRequest(**kwargs)
         client = AsyncHTTPClient()
         yield client.fetch(request)

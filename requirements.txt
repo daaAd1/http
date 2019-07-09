@@ -1,3 +1,4 @@
 tornado==5.0.2
 raven==6.9.0
 ujson==1.35
+pycurl==7.43
