@@ -51,6 +51,10 @@ actions:
             type: string
             in: requestBody
             required: true
+          host:
+            type: string
+            in: requestBody
+            required: true
         http:
           port: 8889
           subscribe:
