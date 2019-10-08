@@ -1,9 +1,8 @@
 omg: 1
-info:
-  version: 0.1.0
-  title: Storyscript HTTP Gateway
-  description: Make http calls and listen for http connections resulting in serverless endpoints.
 actions:
+  help: |
+    Make http calls and listen for http connections through the Asyncy Gateway
+    resulting in serverless http endpoints.
   fetch:
     help: |
       Make a HTTP request to the outside world.
@@ -48,10 +47,6 @@ actions:
           method:
             <<: *method
           path:
-            type: string
-            in: requestBody
-            required: true
-          host:
             type: string
             in: requestBody
             required: true
