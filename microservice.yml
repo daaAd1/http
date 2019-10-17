@@ -1,8 +1,14 @@
 omg: 1
-actions:
-  help: |
+info:
+  version: 1.0.0
+  title: HTTP Gateway
+  description: |
     Make http calls and listen for http connections through the Asyncy Gateway
     resulting in serverless http endpoints.
+  license:
+    name: Apache 2.0
+    url: https://opensource.org/licenses/Apache-2.0
+actions:
   fetch:
     help: |
       Make a HTTP request to the outside world.
@@ -58,7 +64,6 @@ actions:
             method: post
           unsubscribe:
             path: /unregister
-            contentType: application/json
             method: post
         output:
           type: object
@@ -140,3 +145,5 @@ actions:
             finish:
               http:
                 <<: *response_http
+    output:
+      type: any
