@@ -1,4 +1,4 @@
-# Asyncy HTTP Gateway
+# Storyscript HTTP Gateway
 
 API gateway server for executing Stories via HTTP.
 
