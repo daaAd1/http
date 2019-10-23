@@ -15,6 +15,11 @@ actions:
     help: |
       Make a HTTP request to the outside world.
       This command is native to the platform for performance reasons.
+    # The HTTP section here is for validation purposes only.
+    http:
+      path: /ignore
+      port: 8000
+      method: post
     arguments:
       method: &method
         type: string
