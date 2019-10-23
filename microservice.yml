@@ -1,8 +1,16 @@
 omg: 1
+info:
+  version: 1.0.0
+  title: HTTP gateway for Storyscript Cloud
+  description: This is the HTTP service for Storyscript Cloud, which allows stories to be triggered via HTTP from the outside world.
+  contact:
+    name: Storyscript
+    url: https://storyscript.io
+    email: infra@storyscript.io
+  license:
+    name: Apache 2
+    url: http://opensource.org/licenses/Apache-2.0
 actions:
-  help: |
-    Make http calls and listen for http connections through the Asyncy Gateway
-    resulting in serverless http endpoints.
   fetch:
     help: |
       Make a HTTP request to the outside world.
@@ -42,7 +50,7 @@ actions:
       listen:
         help: |
           Listen and respond to http connections by
-          registering with the Asyncy Gateway resulting in a serverless function.
+          registering with the Storyscript Gateway resulting in a serverless function.
         arguments:
           method:
             <<: *method
