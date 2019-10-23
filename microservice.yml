@@ -106,6 +106,19 @@ actions:
                   type: boolean
                   in: responseBody
                   required: false
+            writeJSON:
+              http: &response_http
+                contentType: application/json
+                use_event_conn: true
+              arguments:
+                content:
+                  type: string
+                  in: responseBody
+                  required: true
+                flush:
+                  type: boolean
+                  in: responseBody
+                  required: false
             redirect:
               help: Redirect the incoming URL. No additional actions may be used after executing this command.
               http:
