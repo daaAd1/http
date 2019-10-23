@@ -244,10 +244,7 @@ class ExecHandler(SentryMixin, RequestHandler):
                 if ins['data'].get('flush'):
                     self.flush()
             elif command == 'writeJSON':
-                if ins['data'].get('content') is None:
-                    self.write('null')
-                else:
-                    self.write(json.dumps(ins['data']['content']))
+                self.write(json.dumps(ins['data']['content']))
                 if ins['data'].get('flush'):
                     self.flush()
             elif command == 'set_status':

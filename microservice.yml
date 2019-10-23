@@ -107,15 +107,17 @@ actions:
                   in: responseBody
                   required: false
             writeJSON:
-              http: &response_http
-                contentType: application/json
-                use_event_conn: true
+              help: Return JSON built from content argument.
+              http:
+                <<: *response_http
               arguments:
                 content:
+                  help: The content from which JSON will be built
                   type: string
                   in: responseBody
                   required: true
                 flush:
+                  help: Parameter that decides wheter to flush data or not
                   type: boolean
                   in: responseBody
                   required: false
