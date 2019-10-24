@@ -99,25 +99,27 @@ actions:
                 use_event_conn: true
               arguments:
                 content:
+                  help: The response content.
                   type: string
                   in: responseBody
                   required: true
                 flush:
+                  help: Parameter which decides whether to flush the response.
                   type: boolean
                   in: responseBody
                   required: false
             writeJSON:
-              help: Return JSON built from content argument.
+              help: Write a JSON response body.
               http:
                 <<: *response_http
               arguments:
                 content:
-                  help: The content from which JSON will be built
+                  help: The content from which the JSON response will be built.
                   type: string
                   in: responseBody
                   required: true
                 flush:
-                  help: Parameter that decides wheter to flush data or not
+                  help: Parameter which decides whether to flush the response.
                   type: boolean
                   in: responseBody
                   required: false
