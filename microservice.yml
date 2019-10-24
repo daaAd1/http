@@ -118,11 +118,6 @@ actions:
                   type: string
                   in: responseBody
                   required: true
-                flush:
-                  help: Parameter which decides whether to flush the response.
-                  type: boolean
-                  in: responseBody
-                  required: false
             redirect:
               help: Redirect the incoming URL. No additional actions may be used after executing this command.
               http:
